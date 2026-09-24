@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MatteHjelpen</title>
+  <!--
+    MathJax rendrer LaTeX mellom $...$. Vi setter ALDRI modellens tekst inn som
+    HTML (kun textContent), slik at et svar med <script> ikke kan kjøre kode i
+    nettleseren. MathJax typesetter tekstnoder etterpå.
+  -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    :root {
+      --bakgrunn: #f6f7f9;
+      --kort: #ffffff;
+      --tekst: #16191d;
+      --dempet: #5c6370;
+      --kant: #dfe3e8;
+      --aksent: #1f5fa8;
+      --ok-bakgrunn: #e7f6ec; --ok-kant: #7fc59a; --ok-tekst: #14622f;
+      --feil-bakgrunn: #fdeaea; --feil-kant: #e3a0a0; --feil-tekst: #8d1f1f;
+      --advarsel-bakgrunn: #fdf3e0; --advarsel-kant: #e3c58a; --advarsel-tekst: #7a5312;
+      --kode-bakgrunn: #f1f3f6;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bakgrunn: #14171b; --kort: #1c2026; --tekst: #e8eaed; --dempet: #a2aab6;
+        --kant: #2d333b; --aksent: #6ea8e8;
+        --ok-bakgrunn: #17301f; --ok-kant: #3f7f57; --ok-tekst: #a8e6bd;
+        --feil-bakgrunn: #33191a; --feil-kant: #8a4444; --feil-tekst: #f3b0b0;
+        --advarsel-bakgrunn: #2f2718; --advarsel-kant: #7d6631; --advarsel-tekst: #f0d49a;
+        --kode-bakgrunn: #23282f;
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: var(--bakgrunn); color: var(--tekst);
+      max-width: 820px; margin: 0 auto; padding: 1.5rem 1rem 4rem;
+      line-height: 1.55;
+    }
+    h1 { font-size: 1.7rem; margin: 0; }
+    h2 { font-size: 1.05rem; margin: 0 0 .6rem; letter-spacing: .01em; }
+    .undertittel { color: var(--dempet); margin: .2rem 0 .8rem; }
+    .status-linje { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1.2rem; }
+    .merke {
+      font-size: .78rem; padding: .18rem .55rem; border-radius: 999px;
+      border: 1px solid var(--kant); background: var(--kort); color: var(--dempet);
+    }
+    .merke.av { border-color: var(--advarsel-kant); color: var(--advarsel-tekst); background: var(--advarsel-bakgrunn); }
+    .kort {
+      background: var(--kort); border: 1px solid var(--kant); border-radius: 10px;
+      padding: 1rem 1.1rem; margin-bottom: 1rem;
+    }
+    label { display: block; font-weight: 600; margin-bottom: .4rem; }
+    textarea {
+      width: 100%; min-height: 5rem; font-size: 1rem; font-family: inherit;
+      padding: .6rem .7rem; border-radius: 8px; border: 1px solid var(--kant);
+      background: var(--bakgrunn); color: var(--tekst); resize: vertical;
+    }
+    .knapperad { display: flex; align-items: center; gap: .8rem; margin-top: .7rem; }
+    button {
+      font-size: 1rem; font-family: inherit; padding: .5rem 1.4rem; cursor: pointer;
+      border-radius: 8px; border: 1px solid var(--aksent); background: var(--aksent); color: #fff;
+    }
+    button:disabled { opacity: .55; cursor: progress; }
+    .hint { color: var(--dempet); font-size: .85rem; }
+    .eksempler { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .9rem; }
+    .eksempel {
+      font-size: .82rem; padding: .25rem .6rem; border-radius: 999px; cursor: pointer;
+      border: 1px dashed var(--kant); background: transparent; color: var(--dempet);
+    }
+    .eksempel:hover { border-color: var(--aksent); color: var(--aksent); }
+    .banner {
+      border-radius: 10px; padding: .85rem 1.1rem; margin-bottom: 1rem;
+      border: 1px solid var(--kant); background: var(--kort);
+    }
+    .banner .tittel { font-weight: 700; }
+    .banner .detaljer { font-size: .88rem; margin-top: .35rem; color: inherit; opacity: .92; }
+    .banner.validert { background: var(--ok-bakgrunn); border-color: var(--ok-kant); color: var(--ok-tekst); }
+    .banner.feilet { background: var(--feil-bakgrunn); border-color: var(--feil-kant); color: var(--feil-tekst); }
+    .banner.ikke_mulig { background: var(--advarsel-bakgrunn); border-color: var(--advarsel-kant); color: var(--advarsel-tekst); }
+    .banner.validert.delvis { background: var(--advarsel-bakgrunn); border-color: var(--advarsel-kant); color: var(--advarsel-tekst); }
+    .banner .detaljer.forbehold { font-weight: 600; opacity: 1; }
+    .feilkort { background: var(--feil-bakgrunn); border-color: var(--feil-kant); color: var(--feil-tekst); }
+    ol, ul { margin: 0; padding-left: 1.3rem; }
+    li { margin-bottom: .55rem; }
+    code, .kode {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .86rem;
+      background: var(--kode-bakgrunn); padding: .12rem .35rem; border-radius: 5px;
+      overflow-wrap: anywhere;
+    }
+    .formelmerke {
+      display: inline-block; font-size: .74rem; font-weight: 600; margin-left: .35rem;
+      padding: .05rem .4rem; border-radius: 5px; border: 1px solid var(--aksent);
+      color: var(--aksent); background: transparent; cursor: pointer;
+    }
+    .formel-oppforing { margin-bottom: .8rem; }
+    .formel-navn { font-weight: 600; }
+    .formel-ref { color: var(--dempet); font-size: .85rem; }
+    .verktoy { font-size: .9rem; }
+    .verktoy .feil { color: var(--feil-tekst); }
+    .dempet { color: var(--dempet); }
+    .kostnad { color: var(--dempet); font-size: .85rem; margin-top: 1rem; }
+    .laster { color: var(--dempet); }
+    .spinner {
+      display: inline-block; width: .8rem; height: .8rem; margin-right: .45rem;
+      border: 2px solid var(--kant); border-top-color: var(--aksent); border-radius: 50%;
+      animation: snurr .8s linear infinite; vertical-align: -1px;
+    }
+    @keyframes snurr { to { transform: rotate(360deg); } }
+    footer { color: var(--dempet); font-size: .8rem; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>MatteHjelpen 🧮</h1>
+    <p class="undertittel">Modellen resonnerer · SymPy regner · <strong>du</strong> vurderer svaret.</p>
+    <div class="status-linje" id="status"></div>
+  </header>
+
+  <main>
+    <section class="kort">
+      <label for="oppgave">Skriv inn en matteoppgave</label>
+      <textarea id="oppgave" placeholder="F.eks. «Løs y'' + 2y = 0» eller «Deriver x²·sin(3x)»"></textarea>
+      <div class="knapperad">
+        <button id="los-knapp" type="button">Løs</button>
+        <span class="hint">Ctrl/Cmd + Enter</span>
+      </div>
+      <div class="eksempler" id="eksempler"></div>
+    </section>
+
+    <p class="laster" id="laster" hidden><span class="spinner"></span><span id="laster-tekst">Jobber …</span></p>
+    <section class="kort feilkort" id="feil" hidden></section>
+
+    <section id="resultat" hidden>
+      <div class="banner" id="validering"></div>
+
+      <section class="kort" id="tolkning-kort" hidden>
+        <h2>Slik ble oppgaven tolket</h2>
+        <p id="tolkning"></p>
+        <p class="dempet" id="tolkning-maskin"></p>
+      </section>
+
+      <section class="kort">
+        <h2>Svar</h2>
+        <div id="svar"></div>
+        <p class="dempet" id="usikkerhet" hidden></p>
+      </section>
+
+      <section class="kort" id="steg-kort" hidden>
+        <h2>Stegvis løsning</h2>
+        <ol id="steg"></ol>
+      </section>
+
+      <section class="kort" id="formler-kort" hidden>
+        <h2>Formler brukt</h2>
+        <div id="formler"></div>
+      </section>
+
+      <section class="kort" id="verktoy-kort" hidden>
+        <h2>Verktøykall som faktisk ble utført</h2>
+        <ol id="verktoy" class="verktoy"></ol>
+      </section>
+
+      <section class="kort" id="advarsler-kort" hidden>
+        <h2>Advarsler</h2>
+        <ul id="advarsler"></ul>
+      </section>
+
+      <p class="kostnad" id="kostnad"></p>
+    </section>
+  </main>
+
+  <footer>
+    Svar fra en språkmodell er ikke fasit. Valideringen kontrollerer svaret mot oppgaven
+    <em>slik modellen tolket den</em> – les tolkningen før du stoler på svaret.
+  </footer>
+
+  <script>
+    const EKSEMPLER = [
+      'Deriver f(x) = x^2 * sin(3x)',
+      'Finn integralet av x*e^(2x)',
+      'Løs x^2 - 2x - 8 = 0',
+      'Finn den generelle løsningen av y\'\' + 2y = 0',
+      'Løs y\'\' - 3y\' + 2y = 0 med y(0) = 1 og y\'(0) = 0',
+      'Finn egenverdiene til [[2, 1, 0], [1, 3, 1], [0, 1, 4]]',
+      'Skriv (1 + i*sqrt(3))^7 på formen a + bi',
+      'Bevis Pythagoras\' læresetning',
+      'Deriver sin^-1(x)'
+    ];
+
+    const el = (id) => document.getElementById(id);
+    const vis = (node, synlig) => { node.hidden = !synlig; };
+
+    function tøm(node) { while (node.firstChild) node.removeChild(node.firstChild); }
+
+    function lagElement(tag, tekst, klasse) {
+      const node = document.createElement(tag);
+      if (tekst !== undefined && tekst !== null) node.textContent = tekst;
+      if (klasse) node.className = klasse;
+      return node;
+    }
+
+    function typesett(node) {
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise([node]).catch(() => {});
+      }
+    }
+
+    function tall(verdi, desimaler) {
+      if (verdi === null || verdi === undefined) return 'ukjent';
+      return Number(verdi).toLocaleString('nb-NO', { maximumFractionDigits: desimaler });
+    }
+
+    async function hentStatus() {
+      try {
+        const svar = await fetch('/status');
+        const data = await svar.json();
+        const boks = el('status');
+        tøm(boks);
+        if (data.feil) { boks.appendChild(lagElement('span', data.feil, 'merke av')); return; }
+        boks.appendChild(lagElement('span', 'Modell: ' + data.modell, 'merke'));
+        boks.appendChild(lagElement('span', 'Verktøy: ' + (data.use_tools ? 'på' : 'AV'),
+          'merke' + (data.use_tools ? '' : ' av')));
+        boks.appendChild(lagElement('span', 'Stegforklaring: ' + (data.forklar_steg ? 'på' : 'AV'),
+          'merke' + (data.forklar_steg ? '' : ' av')));
+        boks.appendChild(lagElement('span', data.antall_formler + ' formler · ' + data.antall_verktoy + ' verktøy', 'merke'));
+        if (!data.api_nokkel_satt) {
+          boks.appendChild(lagElement('span', 'API-nøkkel mangler i .env', 'merke av'));
+        }
+      } catch (e) { /* status er ikke kritisk */ }
+    }
+
+    function lagEksempler() {
+      const boks = el('eksempler');
+      EKSEMPLER.forEach((tekst) => {
+        const knapp = lagElement('button', tekst, 'eksempel');
+        knapp.type = 'button';
+        knapp.addEventListener('click', () => { el('oppgave').value = tekst; el('oppgave').focus(); });
+        boks.appendChild(knapp);
+      });
+    }
+
+    function visValidering(data) {
+      const status = data.valideringsstatus || (data.validert ? 'validert' : 'ikke_mulig');
+      const forbehold = data.valideringsforbehold || [];
+      const banner = el('validering');
+      // Et svar som bare oppgir én av to røtter ER kontrollert, men ikke
+      // fullstendig. Da skal banneret være gult, ikke grønt – ellers slutter
+      // brukeren å lese der det grønne står.
+      const delvis = status === 'validert' && forbehold.length > 0;
+      banner.className = 'banner ' + status + (delvis ? ' delvis' : '');
+      tøm(banner);
+      const titler = {
+        validert: '✅ Svaret er kontrollert numerisk og stemmer',
+        feilet: '❌ Kontrollen slo feil – svaret ser ikke riktig ut',
+        ikke_mulig: '⚠️ Svaret er IKKE verifisert av et verktøy'
+      };
+      banner.appendChild(lagElement('div',
+        delvis ? '⚠️ Kontrollert, men ufullstendig – les forbeholdet' : (titler[status] || titler.ikke_mulig),
+        'tittel'));
+      forbehold.forEach((tekst) => banner.appendChild(lagElement('div', tekst, 'detaljer forbehold')));
+      if (data.valideringsdetaljer) {
+        banner.appendChild(lagElement('div', data.valideringsdetaljer, 'detaljer'));
+      }
+      if (data.valideringsmetode) {
+        banner.appendChild(lagElement('div', 'Metode: ' + data.valideringsmetode, 'detaljer'));
+      }
+    }
+
+    function visSteg(data) {
+      const liste = el('steg');
+      tøm(liste);
+      const detaljer = Array.isArray(data.steg_detaljer) && data.steg_detaljer.length
+        ? data.steg_detaljer
+        : (data.steg || []).map((tekst) => ({ tekst: tekst, formel_ider: [] }));
+      detaljer.forEach((steg) => {
+        const punkt = document.createElement('li');
+        punkt.appendChild(lagElement('span', steg.tekst));
+        (steg.formel_ider || []).forEach((id) => {
+          const merke = lagElement('span', id, 'formelmerke');
+          merke.title = 'Vis formelen';
+          merke.addEventListener('click', () => {
+            const mål = document.getElementById('formel-' + id);
+            if (mål) mål.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          });
+          punkt.appendChild(merke);
+        });
+        liste.appendChild(punkt);
+      });
+      vis(el('steg-kort'), detaljer.length > 0);
+    }
+
+    function visFormler(data) {
+      const boks = el('formler');
+      tøm(boks);
+      const formler = data.formler_brukt || [];
+      formler.forEach((formel) => {
+        const rad = lagElement('div', null, 'formel-oppforing');
+        rad.id = 'formel-' + formel.id;
+        const topp = lagElement('div');
+        topp.appendChild(lagElement('span', formel.id + ' · ' + formel.navn, 'formel-navn'));
+        if (formel.steg && formel.steg.length) {
+          topp.appendChild(lagElement('span', '  (brukt i steg ' + formel.steg.join(', ') + ')', 'formel-ref'));
+        }
+        rad.appendChild(topp);
+        rad.appendChild(lagElement('div', '$$' + formel.formel + '$$'));
+        rad.appendChild(lagElement('div', formel.referanse, 'formel-ref'));
+        boks.appendChild(rad);
+      });
+      vis(el('formler-kort'), formler.length > 0);
+    }
+
+    function visVerktoy(data) {
+      const liste = el('verktoy');
+      tøm(liste);
+      const kall = data.verktoy_brukt || [];
+      kall.forEach((enkelt) => {
+        const punkt = document.createElement('li');
+        const argumenter = JSON.stringify(enkelt.argumenter);
+        punkt.appendChild(lagElement('span', enkelt.navn + '(' + argumenter + ')', 'kode'));
+        const resultat = enkelt.resultat || {};
+        const svar = resultat.feil ? ('FEIL: ' + resultat.feil) : ('→ ' + (resultat.resultat ?? ''));
+        punkt.appendChild(lagElement('div', svar, resultat.feil ? 'feil' : ''));
+        if (resultat.merknad) punkt.appendChild(lagElement('div', resultat.merknad, 'dempet'));
+        liste.appendChild(punkt);
+      });
+      const kort = el('verktoy-kort');
+      vis(kort, true);
+      kort.querySelector('h2').textContent = kall.length
+        ? 'Verktøykall som faktisk ble utført (' + kall.length + ')'
+        : 'Ingen verktøykall ble utført';
+      if (!kall.length) {
+        liste.appendChild(lagElement('li',
+          'Modellen regnet uten SymPy i denne kjøringen. Da er svaret bare språkmodellens eget.',
+          'dempet'));
+      }
+    }
+
+    function visAdvarsler(data) {
+      const liste = el('advarsler');
+      tøm(liste);
+      (data.advarsler || []).forEach((tekst) => liste.appendChild(lagElement('li', tekst)));
+      vis(el('advarsler-kort'), (data.advarsler || []).length > 0);
+    }
+
+    function visKostnad(data) {
+      const deler = [];
+      if (data.tokens_brukt === null || data.tokens_brukt === undefined) {
+        deler.push('Tokens: ukjent');
+      } else {
+        const t = data.tokens || {};
+        deler.push('Tokens: ' + tall(data.tokens_brukt, 0) +
+          (t.inn !== undefined ? ' (inn ' + tall(t.inn, 0) + ' / ut ' + tall(t.ut, 0) + ')' : ''));
+      }
+      if (data.kostnad_kjent) {
+        let kostnad = 'Estimert kostnad: $' + Number(data.estimert_kostnad).toFixed(6);
+        if (data.estimert_kostnad_nok !== null && data.estimert_kostnad_nok !== undefined) {
+          kostnad += ' ≈ ' + tall(data.estimert_kostnad_nok, 4) + ' kr';
+        }
+        deler.push(kostnad + ' (listepris – gratismodellen koster 0)');
+      } else {
+        deler.push('Estimert kostnad: ukjent');
+      }
+      if (data.modell) deler.push('Modell: ' + data.modell);
+      if (data.use_tools !== undefined && data.use_tools !== null) deler.push('Verktøy: ' + (data.use_tools ? 'på' : 'av'));
+      if (data.runder) deler.push(data.runder + ' runde(r)');
+      if (data.varighet_s) deler.push(tall(data.varighet_s, 1) + ' s');
+      el('kostnad').textContent = deler.join(' · ');
+    }
+
+    async function los() {
+      const oppgave = el('oppgave').value.trim();
+      if (!oppgave) { el('oppgave').focus(); return; }
+      const knapp = el('los-knapp');
+      knapp.disabled = true;
+      vis(el('feil'), false);
+      vis(el('resultat'), false);
+      vis(el('laster'), true);
+      const start = Date.now();
+      const teller = setInterval(() => {
+        el('laster-tekst').textContent = 'Jobber … ' + Math.round((Date.now() - start) / 1000) + ' s';
+      }, 500);
+      try {
+        const svar = await fetch('/solve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ oppgave: oppgave })
+        });
+        const data = await svar.json();
+        if (data.feil) {
+          const boks = el('feil');
+          tøm(boks);
+          boks.appendChild(lagElement('h2', 'Det gikk galt'));
+          boks.appendChild(lagElement('p', data.feil));
+          if (data.teknisk_detalj) boks.appendChild(lagElement('p', data.teknisk_detalj, 'kode'));
+          vis(boks, true);
+          return;
+        }
+        visValidering(data);
+        el('tolkning').textContent = data.tolkning || '';
+        el('tolkning-maskin').textContent = data.problem_sympy
+          ? 'Maskinlesbart: ' + data.problem_sympy + (data.oppgavetype ? '  ·  type: ' + data.oppgavetype : '')
+          : '';
+        vis(el('tolkning-kort'), Boolean(data.tolkning || data.problem_sympy));
+        el('svar').textContent = data.svar || '';
+        const usikkerhet = el('usikkerhet');
+        usikkerhet.textContent = data.usikkerhet ? 'Modellens egen usikkerhet: ' + data.usikkerhet : '';
+        vis(usikkerhet, Boolean(data.usikkerhet));
+        visSteg(data);
+        visFormler(data);
+        visVerktoy(data);
+        visAdvarsler(data);
+        visKostnad(data);
+        vis(el('resultat'), true);
+        typesett(el('resultat'));
+      } catch (e) {
+        const boks = el('feil');
+        tøm(boks);
+        boks.appendChild(lagElement('h2', 'Fikk ikke kontakt med appen'));
+        boks.appendChild(lagElement('p', String(e)));
+        vis(boks, true);
+      } finally {
+        clearInterval(teller);
+        vis(el('laster'), false);
+        knapp.disabled = false;
+      }
+    }
+
+    el('los-knapp').addEventListener('click', los);
+    el('oppgave').addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') los();
+    });
+    lagEksempler();
+    hentStatus();
+  </script>
+</body>
+</html>
